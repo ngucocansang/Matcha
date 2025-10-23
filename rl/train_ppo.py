@@ -10,7 +10,8 @@ from matcha_env import MatchaBalanceEnv
 SEED = 42
 set_random_seed(SEED)
 
-URDF_PATH = "/mnt/data/balance_robot.urdf"  # <-- path URDF của bạn
+URDF_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\hardware\balance_robot.urdf"
+
 LOG_ROOT = "./logs_ppo"
 RUN_ID = time.strftime("%Y%m%d-%H%M%S")
 LOG_DIR = os.path.join(LOG_ROOT, f"run_{RUN_ID}")

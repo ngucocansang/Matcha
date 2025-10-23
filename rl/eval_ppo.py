@@ -5,8 +5,9 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from matcha_env import MatchaBalanceEnv
 
-URDF_PATH = "/mnt/data/balance_robot.urdf"
-MODEL_PATH = "./logs_ppo/<THAY-BANG-THU-MUC-RUN>/ppo_matcha_final.zip"
+URDF_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\hardware\balance_robot.urdf"
+MODEL_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\logs_ppo\run_20251023-171447\ppo_matcha_final.zip"
+
 
 def make_env(render=False):
     def _thunk():
@@ -25,15 +26,28 @@ if __name__ == "__main__":
     print(f"[EVAL] Mean reward over 20 eps: {mean_r:.2f} ± {std_r:.2f}")
     eval_env.close()
 
-    # Demo 1 episode có GUI
-    demo_env = make_env(render=True)()
-    obs, info = demo_env.reset()
-    ep_r, ep_len = 0.0, 0
-    for t in range(2000):
-        action, _ = model.predict(obs, deterministic=True)
-        obs, r, term, trunc, _ = demo_env.step(action)
-        ep_r += r; ep_len += 1
-        if term or trunc:
-            print(f"[DEMO] Return={ep_r:.2f}, len={ep_len}")
-            break
-    demo_env.close()
+# --- DEMO with GUI + balance time measurement ---
+import time
+demo_env = make_env(render=True)()
+obs, info = demo_env.reset()
+ep_r, ep_len = 0.0, 0
+
+real_start = time.time()
+
+for t in range(5000):  # ~20 seconds at 240Hz
+    action, _ = model.predict(obs, deterministic=True)
+    obs, r, term, trunc, _ = demo_env.step(action)
+    ep_r += r
+    ep_len += 1
+    time.sleep(1/240)  # realtime speed (optional)
+    if term or trunc:
+        break
+
+real_elapsed = time.time() - real_start
+sim_elapsed = ep_len * demo_env.time_step
+
+print(f"\n[RESULT] Simulated time = {sim_elapsed:.2f}s  |  Real elapsed = {real_elapsed:.2f}s")
+print(f"[RESULT] Steps before fall = {ep_len}  |  Return = {ep_r:.2f}")
+
+demo_env.close()
+

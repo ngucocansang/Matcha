@@ -1,4 +1,3 @@
-# rl/matcha_env.py
 import os
 import gymnasium as gym
 import numpy as np
@@ -6,22 +5,37 @@ import pybullet as p
 import pybullet_data
 from gymnasium import spaces
 
+
 class MatchaBalanceEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
 
     def __init__(
         self,
-        urdf_path:str = "/mnt/data/balance_robot.urdf",  # <-- URDF của bạn
-        render:bool = False,
-        time_step:float = 1.0/240.0,
-        max_episode_steps:int = 2000,
-        torque_limit:float = 2.0,
-        pitch_limit_deg:float = 35.0,
-        debug_joints:bool = False,
-        symmetric_action:bool = True,
+        urdf_path: str = None,
+        render: bool = False,
+        time_step: float = 1.0 / 240.0,
+        max_episode_steps: int = 2000,
+        torque_limit: float = 2.0,
+        pitch_limit_deg: float = 35.0,
+        debug_joints: bool = False,
+        symmetric_action: bool = True,
     ):
         super().__init__()
+
+        # ✅ Auto-detect URDF path regardless of current working directory
+        if urdf_path is None:
+            current_dir = os.path.dirname(os.path.abspath(__file__))  # → .../Matcha/rl
+            project_root = os.path.dirname(current_dir)               # → .../Matcha
+            urdf_path = os.path.join(project_root, "hardware", "balance_robot.urdf")
+
+        urdf_path = os.path.normpath(urdf_path)
+
+        if not os.path.isfile(urdf_path):
+            raise FileNotFoundError(f"URDF not found at: {urdf_path}")
+
         self.urdf_path = urdf_path
+        print(f"[INFO] Using URDF: {self.urdf_path}")
+
         self.render_mode = "human" if render else None
         self.time_step = time_step
         self.max_episode_steps = max_episode_steps
@@ -34,26 +48,29 @@ class MatchaBalanceEnv(gym.Env):
         obs_high = np.array([np.pi, 50.0, 10.0], dtype=np.float32)
         self.observation_space = spaces.Box(-obs_high, obs_high, dtype=np.float32)
 
-        # Action: 1D torque (both wheels same) hoặc 2D nếu symmetric_action=False
+        # Action: 1D torque (both wheels same) or 2D if symmetric_action=False
         if self.symmetric_action:
             self.action_space = spaces.Box(
                 low=np.array([-1.0], dtype=np.float32),
-                high=np.array([ 1.0], dtype=np.float32),
-                dtype=np.float32
+                high=np.array([1.0], dtype=np.float32),
+                dtype=np.float32,
             )
         else:
             self.action_space = spaces.Box(
                 low=np.array([-1.0, -1.0], dtype=np.float32),
-                high=np.array([ 1.0,  1.0], dtype=np.float32),
-                dtype=np.float32
+                high=np.array([1.0, 1.0], dtype=np.float32),
+                dtype=np.float32,
             )
 
+        # Internal simulation state
         self.physics_client = None
         self.robot_id = None
         self.base_link = 0
         self.wheel_left_joint = None
         self.wheel_right_joint = None
         self.step_count = 0
+
+    # ----------------------- PyBullet setup -----------------------
 
     def _connect(self):
         if self.render_mode == "human":
@@ -69,9 +86,9 @@ class MatchaBalanceEnv(gym.Env):
         p.setTimeStep(self.time_step)
         p.setGravity(0, 0, -9.81)
         self.plane_id = p.loadURDF("plane.urdf")
+
         start_pos = [0, 0, 0.1]
         start_orn = p.getQuaternionFromEuler([0, 0, 0])
-        assert os.path.isfile(self.urdf_path), f"URDF not found: {self.urdf_path}"
         self.robot_id = p.loadURDF(self.urdf_path, start_pos, start_orn, useFixedBase=False)
 
         if self.debug_joints:
@@ -81,7 +98,7 @@ class MatchaBalanceEnv(gym.Env):
                 ji = p.getJointInfo(self.robot_id, j)
                 print(j, ji[1].decode(), "type=", ji[2], "parentIndex=", ji[16])
 
-        # ====== ĐÃ CHỈNH THEO URDF CỦA BẠN ======
+        # === Joints from your URDF ===
         wheel_left_name = "base_to_left_wheel"
         wheel_right_name = "base_to_right_wheel"
 
@@ -90,11 +107,11 @@ class MatchaBalanceEnv(gym.Env):
         assert self.wheel_left_joint is not None, "Left wheel joint not found"
         assert self.wheel_right_joint is not None, "Right wheel joint not found"
 
-        # Vô hiệu điều khiển mặc định
+        # Disable default motors
         for j in [self.wheel_left_joint, self.wheel_right_joint]:
             p.setJointMotorControl2(self.robot_id, j, p.VELOCITY_CONTROL, force=0)
 
-    def _find_joint_by_name(self, name:str):
+    def _find_joint_by_name(self, name: str):
         n_j = p.getNumJoints(self.robot_id)
         for j in range(n_j):
             ji = p.getJointInfo(self.robot_id, j)
@@ -102,14 +119,16 @@ class MatchaBalanceEnv(gym.Env):
                 return j
         return None
 
+    # ----------------------- State & Action -----------------------
+
     def _get_state(self):
         pos, orn = p.getBasePositionAndOrientation(self.robot_id)
         lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
         roll, pitch, yaw = p.getEulerFromQuaternion(orn)
 
-        # Theo URDF, trục bánh là Y (0 1 0), nên pitch là quanh Y
-        pitch_rate = ang_vel[1]  # rad/s quanh Y
-        x_dot = lin_vel[0]       # m/s (giả sử X là hướng tiến)
+        # Wheel axis = Y → pitch = rotation around Y
+        pitch_rate = ang_vel[1]  # rad/s
+        x_dot = lin_vel[0]       # m/s
 
         obs = np.array([pitch, pitch_rate, x_dot], dtype=np.float32)
         return obs, pos, (roll, pitch, yaw)
@@ -128,6 +147,8 @@ class MatchaBalanceEnv(gym.Env):
         p.setJointMotorControl2(self.robot_id, self.wheel_right_joint,
                                 controlMode=p.TORQUE_CONTROL, force=tau_r)
 
+    # ----------------------- RL interface -----------------------
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         if self.physics_client is None:
@@ -135,7 +156,7 @@ class MatchaBalanceEnv(gym.Env):
         self._load_world()
         self.step_count = 0
 
-        # Random pitch nhỏ ban đầu để đa dạng hoá
+        # Random initial pitch
         init_pitch = self.np_random.uniform(low=-0.05, high=0.05)
         cur_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         new_orn = p.getQuaternionFromEuler([0, init_pitch, 0])
