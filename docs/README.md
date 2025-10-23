@@ -1,4 +1,4 @@
-# 🫶 Matcha — Multi-Modal Perception for End-to-End Reinforcement Learning in Balancing Robots
+# 🍵 Matcha — Multi-Modal Perception for End-to-End Reinforcement Learning in Balancing Robots
 
 > *"Balancing, but make it intelligent (and a little bit cute)."* ☕🤖
 
@@ -46,12 +46,12 @@ Each version is trained, evaluated, and logged independently under the `/logs_pp
 
 ## 👩‍🔬 Team Matcha
 
-| Member | Role | Focus Area | Notes |
+| Member | Role | Focus Area |
 |:--|:--|:--|:--|
-| **Đinh Hồng Ngọc** | Project Manager & AI / CV Engineer | Leads PPO & End-to-End RL pipelines, reward tuning, perception fusion. Also coordinates research documentation and writing. | Strong CS + Computer Vision background. |
-| **Phương Quỳnh** | Mechanical & Embedded Systems Engineer | Designs robot hardware, integrates IMU + camera, builds simulation-to-real bridge. | Blends mechanical design with embedded vision work. |
-| **Alex** | Research Assistant & Software Support | Runs experiments, manages logs, visualizes data, and supports evaluation pipeline. | Junior member learning through hands-on experiments. |
-| **Prof. Dương Phùng** | 🎓 Research Advisor (Fulbright University) | Supervises research direction, provides guidance on RL architecture and methodology. | |
+| **Đinh Hồng Ngọc** | Project Manager & AI / CV Engineer | Leads PPO & End-to-End RL pipelines, reward tuning, perception fusion. Also coordinates research documentation and writing.|
+| **Phương Quỳnh** | Mechanical & Embedded Systems Engineer | Designs robot hardware, integrates IMU + camera, builds simulation-to-real bridge. |
+| **Alex** | Research Assistant & Software Support | Runs experiments, manages logs, visualizes data, and supports evaluation pipeline. |
+| **Prof. Dương Phùng** | 🎓 Research Advisor (Fulbright University) | Supervises research direction, provides guidance on RL architecture and methodology. |
 
 ---
 
