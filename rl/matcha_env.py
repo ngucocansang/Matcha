@@ -19,7 +19,14 @@ class MatchaBalanceEnv(gym.Env):
         pitch_limit_deg: float = 35.0,
         debug_joints: bool = False,
         symmetric_action: bool = True,
+        x_limit: float = 0.6,
+        x_dot_limit: float = 4.0,
+        reward_clip: float = 5.0, 
     ):
+        self.x_limit = x_limit
+        self.x_dot_limit = x_dot_limit
+        self.reward_clip = reward_clip
+
         super().__init__()
 
         # ✅ Auto-detect URDF path regardless of current working directory
@@ -172,18 +179,41 @@ class MatchaBalanceEnv(gym.Env):
         self.step_count += 1
 
         obs, pos, eul = self._get_state()
-        pitch = obs[0]
-        pitch_rate = obs[1]
-        x = pos[0]
+        pitch = obs[0]; pitch_rate = obs[1]
+        x = pos[0]; x_dot = obs[2]
 
+        # weights (dịu hơn bản cũ)
         alive_bonus = 1.0
-        w_th, w_dth, w_x = 2.0, 0.1, 0.01
-        reward = alive_bonus - (w_th * pitch * pitch) - (w_dth * pitch_rate * pitch_rate) - (w_x * x * x)
+        w_th, w_dth, w_x, w_tau = 1.0, 0.05, 0.005, 0.001
 
-        terminated = (abs(pitch) > self.pitch_limit)
+        # Lấy mô-men để phạt nhẹ |tau|^2
+        if self.symmetric_action:
+            tau = float(np.clip(action[0], -1.0, 1.0)) * self.torque_limit
+            tau_sq = tau * tau
+        else:
+            a = np.clip(action, -1.0, 1.0)
+            tau_l = float(a[0]) * self.torque_limit
+            tau_r = float(a[1]) * self.torque_limit
+            tau_sq = 0.5 * (tau_l * tau_l + tau_r * tau_r)
+
+        reward = (
+            alive_bonus
+            - (w_th * pitch * pitch)
+            - (w_dth * pitch_rate * pitch_rate)
+            - (w_x * x * x)
+            - (w_tau * tau_sq)
+        )
+
+        # NEW: terminate sớm khi drift hoặc chạy quá nhanh
+        out_of_bounds = (abs(x) > self.x_limit) or (abs(x_dot) > self.x_dot_limit)
+        terminated = (abs(pitch) > self.pitch_limit) or out_of_bounds
         truncated = (self.step_count >= self.max_episode_steps)
 
-        info = {}
+        # NEW: clip reward để tránh tích lũy quá lớn trong ep xấu
+        if self.reward_clip is not None:
+            reward = float(np.clip(reward, -self.reward_clip, self.reward_clip))
+
+        info = {"out_of_bounds": out_of_bounds}
         return obs, reward, terminated, truncated, info
 
     def render(self):
