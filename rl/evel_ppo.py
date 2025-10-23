@@ -3,10 +3,10 @@ import os
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
-from matcha_env import MatchaBalanceEnv
+from v1.matcha_env import MatchaBalanceEnv
 
 URDF_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\hardware\balance_robot.urdf"
-MODEL_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\logs_ppo\run_20251023-171447\ppo_matcha_final.zip"
+MODEL_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\logs_ppo\v1_baseline_state\run_20251023-192333\ppo_matcha_final.zip"
 
 
 def make_env(render=False):
@@ -50,4 +50,3 @@ print(f"\n[RESULT] Simulated time = {sim_elapsed:.2f}s  |  Real elapsed = {real_
 print(f"[RESULT] Steps before fall = {ep_len}  |  Return = {ep_r:.2f}")
 
 demo_env.close()
-

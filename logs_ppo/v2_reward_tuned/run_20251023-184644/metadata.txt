@@ -1,0 +1,28 @@
+{
+    "version": "v2_reward_tuned",
+    "run_id": "20251023-184644",
+    "urdf_path": "D:\\FULBRIGHT\\FALL 2025\\git_robot\\matcha\\Matcha\\hardware\\balance_robot.urdf",
+    "seed": 42,
+    "n_envs": 8,
+    "total_steps": 600000,
+    "learning_rate": 0.0003,
+    "policy_arch": [
+        256,
+        256
+    ],
+    "max_episode_steps": 1500,
+    "notes": "Reward-tuned PPO: balanced penalties and small survival bonus"
+
+    === Matcha PPO v2 Reward Tuned (Baseline Stable) ===
+Model: ppo_matcha_final.zip
+Train steps: 500,000
+Torque limit: 2.0
+Pitch limit (deg): 35
+Time step: 1/240
+Max episode steps: 1500
+Reward function:
+    reward = 1 - (2.0*pitch^2 + 0.1*pitch_rate^2 + 0.01*x^2)
+Stability: ✅ Stable (mean reward ~1965)
+Average survival: 14.0 s
+
+}

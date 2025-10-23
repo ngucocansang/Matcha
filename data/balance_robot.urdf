@@ -168,14 +168,14 @@
   </link>
 
   <!-- ================= JOINTS ================= -->
-  <joint name="base_to_top" type="fixed">
+  <joint name="base_to_top" type="continuous">
     <parent link="base_link"/>
     <child link="top_plate"/>
     <origin xyz="0 0 0.05"  rpy="0 0 -1.5708" />
   </joint>
 
   <!-- Vertical rods connect base to top correctly -->
-  <joint name="base_to_rod_front_left" type="fixed">
+  <joint name="base_to_rod_front_left" type="continuous">
     <parent link="base_link"/>
     <child link="rod_front_left"/>
     <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>

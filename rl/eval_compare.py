@@ -1,153 +1,109 @@
 # ==========================================================
-# Matcha Robot Evaluation Comparison (Auto Version)
+# Matcha PPO - Cross-Version Evaluation Analyzer
 # ----------------------------------------------------------
-# Automatically detect the 2 most recent PPO training runs
-# and compare their performance (stability, survival, reward)
-#
-# Authors: Team Matcha — Fulbright University Vietnam
-# PM: Đinh Hồng Ngọc | HW: Phương Quỳnh | SW: Alex
-# Instructor: Prof. Dương Phùng
+# Compare PPO training performance across versions
 # ==========================================================
 
 import os
-import time
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import torch
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
-from matcha_env import MatchaBalanceEnv
+from glob import glob
 
+LOG_ROOT = "./logs_ppo"
+MIN_EPISODES = 20  # bỏ qua những run ngắn
 
-# ===================== CONFIG =====================
-LOG_ROOT = "../logs_ppo"       # Thư mục gốc chứa các run_xxx
-N_EPISODES = 5                 # Số episode đánh giá mỗi model
-MAX_STEPS = 3000               # Giới hạn bước mô phỏng
-RENDER = True                  # Bật PyBullet GUI
-TIME_SCALE = 1.0               # 1.0 = realtime, <1 = nhanh hơn
+def find_versions(root):
+    """Find all version subfolders under logs_ppo/"""
+    versions = [v for v in os.listdir(root) if os.path.isdir(os.path.join(root, v))]
+    return sorted(versions)
 
+def collect_csvs(version_folder):
+    """Collect all eval_monitor files in a version folder"""
+    pattern = os.path.join(version_folder, "run_*/eval_monitor.monitor.csv")
+    return sorted(glob(pattern))
 
-# ===================== HELPER: FIND 2 LATEST RUNS =====================
-def get_latest_two_runs(log_root):
-    """Tự động tìm 2 thư mục run_xxx mới nhất."""
-    runs = [os.path.join(log_root, d) for d in os.listdir(log_root)
-            if os.path.isdir(os.path.join(log_root, d)) and d.startswith("run_")]
-    runs.sort(key=os.path.getmtime, reverse=True)
-    if len(runs) < 2:
-        raise RuntimeError("❌ Need at least 2 runs in logs_ppo/ to compare.")
-    return runs[1], runs[0]  # (older, newer)
-
-
-# ===================== EVALUATION FUNCTION =====================
-def evaluate_model(run_path, name):
-    print(f"\n🎯 Evaluating {name} at: {run_path}")
-
-    # Locate model and normalization files
-    model_path = os.path.join(run_path, "best_model.zip")
-    if not os.path.isfile(model_path):
-        # fallback: use ckpt if no best_model
-        ckpts = [f for f in os.listdir(run_path) if f.endswith(".zip")]
-        if not ckpts:
-            raise FileNotFoundError(f"❌ No model found in {run_path}")
-        model_path = os.path.join(run_path, ckpts[-1])
-        print(f"⚠️ Using fallback checkpoint: {model_path}")
-
-    # Make environment
-    def make_env():
-        env = MatchaBalanceEnv(
-            urdf_path="../data/balance_robot.urdf",
-            render=RENDER,
-            max_episode_steps=MAX_STEPS,
-        )
-        return env
-
-    env = DummyVecEnv([make_env])
-    env = VecNormalize(env, training=False, norm_obs=True, norm_reward=False)
-
-    # Try loading VecNormalize stats
+def read_monitor_csv(file_path):
+    """Read a stable-baselines3 monitor CSV"""
     try:
-        env.load_running_average(run_path)
-        print("✅ Loaded VecNormalize stats.")
+        df = pd.read_csv(file_path, skiprows=1)  # skip comment line
+        df.columns = ["r", "l", "t"]  # reward, length, time
+        return df
     except Exception as e:
-        print(f"⚠️ No VecNormalize found: {e}")
+        print(f"⚠️ Could not read {file_path}: {e}")
+        return None
 
-    # Load PPO model
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = PPO.load(model_path, env=env, device=device)
+def summarize_version(version_name, csv_paths):
+    """Compute metrics for one version"""
+    all_rewards = []
+    for path in csv_paths:
+        df = read_monitor_csv(path)
+        if df is not None and len(df) > MIN_EPISODES:
+            all_rewards.append(df["r"].values)
+    if not all_rewards:
+        return None
+    rewards = np.concatenate(all_rewards)
+    mean_r, std_r = np.mean(rewards), np.std(rewards)
+    last_mean = np.mean(rewards[-50:]) if len(rewards) >= 50 else mean_r
+    best_r = np.max(rewards)
+    rel_std = (std_r / abs(mean_r + 1e-8)) * 100
+    stability = "✅ Stable" if rel_std < 10 else ("⚠️ Medium" if rel_std < 30 else "❌ Unstable")
 
-    stats = {"survival": [], "pitch_mean": [], "x_drift": [], "reward": []}
+    return {
+        "version": version_name,
+        "mean_reward": round(mean_r, 2),
+        "std_reward": round(std_r, 2),
+        "rel_std_%": round(rel_std, 2),
+        "best_reward": round(best_r, 2),
+        "last50_mean": round(last_mean, 2),
+        "stability": stability,
+    }
 
-    for ep in range(N_EPISODES):
-        obs, _ = env.reset()
-        done = False
-        total_reward, total_pitch, total_x_drift, steps = 0.0, 0.0, 0.0, 0
-        start_t = time.time()
-
-        while not done and steps < MAX_STEPS:
-            action, _ = model.predict(obs, deterministic=True)
-            obs, reward, terminated, truncated, _ = env.step(action)
-            done = bool(terminated or truncated)
-
-            pitch = obs[0][0]
-            pitch_deg = np.degrees(pitch)
-            total_pitch += abs(pitch_deg)
-
-            x_drift = abs(obs[0][2])
-            total_x_drift += x_drift
-
-            total_reward += reward
-            steps += 1
-            if RENDER:
-                time.sleep(TIME_SCALE * env.get_attr("time_step")[0])
-
-        elapsed = time.time() - start_t
-        stats["survival"].append(elapsed)
-        stats["pitch_mean"].append(total_pitch / steps)
-        stats["x_drift"].append(total_x_drift / steps)
-        stats["reward"].append(total_reward / steps)
-
-        print(f"Ep {ep+1}/{N_EPISODES} — time={elapsed:.2f}s, "
-              f"mean_pitch={stats['pitch_mean'][-1]:.3f}°, "
-              f"mean_x_drift={stats['x_drift'][-1]:.3f}, "
-              f"mean_reward={stats['reward'][-1]:.3f}")
-
-    env.close()
-    results = {k: np.mean(v) for k, v in stats.items()}
-    print(f"\n📊 {name} Summary:")
-    for k, v in results.items():
-        print(f"  {k:12s}: {v:.4f}")
-
-    return results
-
-
-# ===================== MAIN =====================
-if __name__ == "__main__":
-    run_old, run_new = get_latest_two_runs(LOG_ROOT)
-    print(f"📂 Comparing:\n  1️⃣ {run_old}\n  2️⃣ {run_new}")
-
-    result1 = evaluate_model(run_old, "Older PPO Run")
-    result2 = evaluate_model(run_new, "Newer PPO Run")
-
-    # ===================== PLOT =====================
-    labels = ["Survival Time (s)", "Pitch Deviation (°)", "X Drift", "Reward/Step"]
-    keys = ["survival", "pitch_mean", "x_drift", "reward"]
-
-    x = np.arange(len(labels))
-    width = 0.35
-
-    v1_vals = [result1[k] for k in keys]
-    v2_vals = [result2[k] for k in keys]
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.bar(x - width/2, v1_vals, width, label="Older Run", color="#6baed6")
-    ax.bar(x + width/2, v2_vals, width, label="Newer Run", color="#fd8d3c")
-
-    ax.set_ylabel("Value")
-    ax.set_title("🏗️ Matcha PPO Model Comparison (Auto Latest 2 Runs)")
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=15)
-    ax.legend()
-    ax.grid(axis="y", linestyle="--", alpha=0.6)
-
-    plt.tight_layout()
+def plot_comparison(results, save_path=None):
+    plt.figure(figsize=(10, 6))
+    for res in results:
+        version = res["version"]
+        csv_paths = collect_csvs(os.path.join(LOG_ROOT, version))
+        rewards_all = []
+        for pth in csv_paths:
+            df = read_monitor_csv(pth)
+            if df is not None:
+                rewards_all.append(df["r"].rolling(10).mean())
+        if rewards_all:
+            concat = pd.concat(rewards_all, axis=0).reset_index(drop=True)
+            plt.plot(concat, label=version)
+    plt.title("📈 Matcha PPO - Version Comparison")
+    plt.xlabel("Episode")
+    plt.ylabel("Rolling Reward (mean over 10)")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.5)
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight")
+        print(f"📊 Saved comparison plot to {save_path}")
     plt.show()
+
+if __name__ == "__main__":
+    print("🔍 Scanning logs_ppo for versions...\n")
+    versions = find_versions(LOG_ROOT)
+    all_results = []
+
+    for ver in versions:
+        csvs = collect_csvs(os.path.join(LOG_ROOT, ver))
+        summary = summarize_version(ver, csvs)
+        if summary:
+            all_results.append(summary)
+
+    if not all_results:
+        print("❌ No valid monitor files found.")
+        exit(0)
+
+    df_summary = pd.DataFrame(all_results)
+    df_summary = df_summary.sort_values("mean_reward", ascending=False)
+    print("\n📊 PPO VERSION COMPARISON:")
+    print(df_summary.to_string(index=False))
+
+    save_path = os.path.join(LOG_ROOT, "version_comparison.png")
+    plot_comparison(all_results, save_path=save_path)
+
+    df_summary.to_csv(os.path.join(LOG_ROOT, "version_summary.csv"), index=False)
+    print(f"✅ Summary saved to {LOG_ROOT}/version_summary.csv")
