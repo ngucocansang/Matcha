@@ -47,7 +47,7 @@ Each version is trained, evaluated, and logged independently under the `/logs_pp
 ## 👩‍🔬 Team Matcha
 
 | Member | Role | Focus Area |
-|:--|:--|:--|:--|
+|:--|:--|:--|
 | **Đinh Hồng Ngọc** | Project Manager & AI / CV Engineer | Leads PPO & End-to-End RL pipelines, reward tuning, perception fusion. Also coordinates research documentation and writing.|
 | **Phương Quỳnh** | Mechanical & Embedded Systems Engineer | Designs robot hardware, integrates IMU + camera, builds simulation-to-real bridge. |
 | **Alex** | Research Assistant & Software Support | Runs experiments, manages logs, visualizes data, and supports evaluation pipeline. |
