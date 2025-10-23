@@ -14,6 +14,7 @@ model = PPO.load(MODEL_PATH)
 N_EPISODES = 5
 durations = []
 rewards = []
+step = 0
 
 for ep in range(N_EPISODES):
     obs, info = env.reset()
@@ -25,8 +26,21 @@ for ep in range(N_EPISODES):
         obs, reward, terminated, truncated, info = env.step(action)
         total_reward += reward
         done = terminated or truncated
-        p.stepSimulation()
+        # p.stepSimulation()
         time.sleep(1.0 / 120.0)  # real-time playback
+        sim_seconds = env.step_count * env.time_step
+        print(f"Ep {ep+1}: survived {sim_seconds:.2f}s (sim), reward={total_reward:.1f}")
+                # 💥 Push test: apply external force at step 300
+        if step == 300:
+            print("Applying external force!")
+            p.applyExternalForce(
+                objectUniqueId=env.robot_id,   # robot ID
+                linkIndex=-1,                  # apply to base link
+                forceObj=[20, 0, 0],           # push forward (X direction)
+                posObj=[0, 0, 0.1],            # apply slightly above base
+                flags=p.WORLD_FRAME
+            )
+
 
     duration = time.time() - t0
     durations.append(duration)
