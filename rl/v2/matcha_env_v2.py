@@ -1,5 +1,5 @@
 # ==========================================================
-# MatchaBalanceEnvTuned - Reward shaping version (v2)
+# MatchaBalanceEnvUpright - Strict upright balance environment (v3)
 # ==========================================================
 import os
 import numpy as np
@@ -7,14 +7,14 @@ import pybullet as p
 import pybullet_data
 from gymnasium import spaces, Env
 
-class MatchaBalanceEnvTuned(Env):
+class MatchaBalanceEnvUpright(Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
 
     def __init__(
         self,
         urdf_path: str,
         render: bool = False,
-        time_step: float = 1.0/240.0,
+        time_step: float = 1.0 / 240.0,
         max_episode_steps: int = 2000,
         torque_limit: float = 2.0,
         pitch_limit_deg: float = 35.0,
@@ -31,6 +31,7 @@ class MatchaBalanceEnvTuned(Env):
         self.debug_joints = debug_joints
         self.symmetric_action = symmetric_action
 
+        # ---------- Observation & Action ----------
         obs_high = np.array([np.pi, 50.0, 10.0], dtype=np.float32)
         self.observation_space = spaces.Box(-obs_high, obs_high, dtype=np.float32)
 
@@ -50,9 +51,12 @@ class MatchaBalanceEnvTuned(Env):
         self.physics_client = None
         self.robot_id = None
         self.step_count = 0
-        self.pitch_prev = 0
+        self.pitch_prev = 0.0
+        self.pitch_ema = 0.0
+        self.x_origin = 0.0
+        self.ema_alpha = 0.98  # low-pass filter
 
-    # ---------- Simulation Setup ----------
+    # ---------- Setup ----------
     def _connect(self):
         self.physics_client = p.connect(p.GUI if self.render_mode else p.DIRECT)
         p.setGravity(0, 0, -9.81)
@@ -76,6 +80,10 @@ class MatchaBalanceEnvTuned(Env):
         for j in [self.wheel_left_joint, self.wheel_right_joint]:
             p.setJointMotorControl2(self.robot_id, j, p.VELOCITY_CONTROL, force=0)
 
+        # Set friction for realistic wheel-ground interaction
+        p.changeDynamics(self.robot_id, self.wheel_left_joint, lateralFriction=1.0)
+        p.changeDynamics(self.robot_id, self.wheel_right_joint, lateralFriction=1.0)
+
     def _find_joint(self, name: str):
         for j in range(p.getNumJoints(self.robot_id)):
             ji = p.getJointInfo(self.robot_id, j)
@@ -83,7 +91,7 @@ class MatchaBalanceEnvTuned(Env):
                 return j
         return None
 
-    # ---------- State and Actions ----------
+    # ---------- State ----------
     def _get_state(self):
         pos, orn = p.getBasePositionAndOrientation(self.robot_id)
         lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
@@ -92,56 +100,83 @@ class MatchaBalanceEnvTuned(Env):
         x_dot = lin_vel[0]
         return np.array([pitch, pitch_rate, x_dot], dtype=np.float32), pos, (roll, pitch, yaw)
 
+    # ---------- Action ----------
     def _apply_action(self, action):
         if self.symmetric_action:
             torque = float(np.clip(action[0], -1, 1)) * self.torque_limit
             tau_l = tau_r = torque
         else:
             a = np.clip(action, -1, 1)
-            tau_l, tau_r = a[0]*self.torque_limit, a[1]*self.torque_limit
+            tau_l, tau_r = a[0] * self.torque_limit, a[1] * self.torque_limit
         p.setJointMotorControl2(self.robot_id, self.wheel_left_joint, p.TORQUE_CONTROL, force=tau_l)
         p.setJointMotorControl2(self.robot_id, self.wheel_right_joint, p.TORQUE_CONTROL, force=tau_r)
 
-    # ---------- RL Interface ----------
+    # ---------- Gym interface ----------
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         if self.physics_client is None:
             self._connect()
         self._load_world()
+
         self.step_count = 0
         init_pitch = self.np_random.uniform(low=-0.05, high=0.05)
         cur_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         new_orn = p.getQuaternionFromEuler([0, init_pitch, 0])
         p.resetBasePositionAndOrientation(self.robot_id, cur_pos, new_orn)
-        obs, _, _ = self._get_state()
+
+        obs, pos, _ = self._get_state()
         self.pitch_prev = obs[0]
+        self.pitch_ema = 0.0
+        self.x_origin = pos[0]
         return obs, {}
 
     def step(self, action):
         self._apply_action(action)
         p.stepSimulation()
         self.step_count += 1
+
         obs, pos, eul = self._get_state()
         pitch, pitch_rate, x_dot = obs
+        x, _, _ = pos
+        x_err = x - self.x_origin
 
-        # -------- Reward Tuning --------
-        alive_bonus = 1.0
-        w_th, w_dth, w_x = 1.5, 0.05, 0.01
+        # update moving average to detect "leaned" posture
+        self.pitch_ema = self.ema_alpha * self.pitch_ema + (1 - self.ema_alpha) * pitch
 
-        # thêm reward khi pitch giảm (đang quay về 0)
+        # ------------- Reward shaping -------------
+        alive_bonus = 0.2  # smaller survival bonus
+        w_th, w_dth, w_vx, w_xpos, w_lean = 2.0, 0.05, 0.20, 0.10, 1.0
+
+        # limit pitch penalty (Huber-like)
+        pitch_pen = min(pitch * pitch, (0.2 ** 2))  # saturate beyond ~11°
+
         pitch_delta_reward = 0.5 * (abs(self.pitch_prev) - abs(pitch))
         self.pitch_prev = pitch
 
         reward = (
             alive_bonus
-            - w_th * (pitch ** 2)
+            - w_th * pitch_pen
             - w_dth * (pitch_rate ** 2)
-            - w_x * (x_dot ** 2)
+            - w_vx * (x_dot ** 2)
+            - w_xpos * (x_err ** 2)
+            - w_lean * (self.pitch_ema ** 2)
             + pitch_delta_reward
         )
 
-        terminated = abs(pitch) > self.pitch_limit
+        # ------------- Termination -------------
+        pitch_limit = self.pitch_limit
+        x_limit, v_limit = 0.6, 2.0  # m, m/s
+
+        terminated = (
+            abs(pitch) > pitch_limit
+            or abs(x_err) > x_limit
+            or abs(x_dot) > v_limit
+        )
         truncated = self.step_count >= self.max_episode_steps
+
+        if terminated:
+            reward -= 10.0  # heavy penalty for fall
+
         return obs, float(reward), terminated, truncated, {}
 
     def close(self):
