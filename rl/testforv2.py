@@ -1,84 +1,70 @@
-
-# ==========================================================
-# eval_ppo.py - Evaluation & Demo for MatchaBalanceEnvTuned (v2)
-# ==========================================================
-import os
+import pybullet as p
+import pybullet_data
 import time
-import argparse
-from stable_baselines3 import PPO
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
-from v2.matcha_env_v2 import MatchaBalanceEnvTuned as MatchaBalanceEnv
 
-# ---------- Paths ----------
-URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
-MODEL_PATH = r"D:\FALL\PJ\Matcha\logs_ppo\v2_reward_tuned\run_20251025-180428\ppo_matcha_final.zip"
+# ===========================================
+# 1️⃣ Connect to PyBullet and load environment
+# ===========================================
+p.connect(p.GUI)                   # Use GUI so you can see it
+p.setAdditionalSearchPath(pybullet_data.getDataPath())
+p.setGravity(0, 0, -9.81)
 
+# Optional: add a plane for ground
+plane_id = p.loadURDF("plane.urdf")
 
-# ---------- Environment Factory ----------
-def make_env(render=False):
-    """
-    Creates a single instance of the environment.
-    Note: For GUI demo, use the raw env (not DummyVecEnv).
-    """
-    def _thunk():
-        return MatchaBalanceEnv(
-            urdf_path=URDF_PATH,
-            render=render,
-            max_episode_steps=1500,
-            symmetric_action=True,
-        )
-    return _thunk
+# ===========================================
+# 2️⃣ Load your robot URDF
+# ===========================================
+robot_urdf_path = "D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"   # <-- change path if needed
+start_pos = [0, 0, 0.05]
+start_orn = p.getQuaternionFromEuler([0, 0, 0])
 
+robot_id = p.loadURDF(robot_urdf_path, start_pos, start_orn, useFixedBase=False)
 
-# ---------- Main ----------
-def main(render_demo: bool = False):
-    # Load trained PPO model
-    assert os.path.isfile(MODEL_PATH), f"Model not found: {MODEL_PATH}"
-    print(f"[INFO] Loading PPO model from: {MODEL_PATH}")
-    model = PPO.load(MODEL_PATH)
+# ===========================================
+# 3️⃣ Identify wheel joints (by name or index)
+# ===========================================
+# Get joint info to print names
+num_joints = p.getNumJoints(robot_id)
+for i in range(num_joints):
+    print(i, p.getJointInfo(robot_id, i)[1])
 
-    # ----- Headless Evaluation -----
-    print("\n[STEP 1] Running evaluation (no render)...")
-    eval_env = DummyVecEnv([make_env(render=False)])
-    eval_env = VecMonitor(eval_env)
+# You’ll see joint names like:
+# 5 base_to_left_wheel
+# 6 base_to_right_wheel
 
-    mean_r, std_r = evaluate_policy(model, eval_env, n_eval_episodes=20, deterministic=True)
-    print(f"[EVAL] Mean reward over 20 episodes: {mean_r:.2f} ± {std_r:.2f}")
-    eval_env.close()
+left_wheel_joint = 5
+right_wheel_joint = 6
 
-    # ----- Optional GUI Demo -----
-    if render_demo:
-        print("\n[STEP 2] Starting GUI demo...")
-        demo_env = make_env(render=True)()  # Direct environment, not wrapped
-        obs, info = demo_env.reset()
-        ep_r, ep_len = 0.0, 0
+# ===========================================
+# 4️⃣ Simple forward motion
+# ===========================================
+target_velocity = 10.0    # rad/s wheel speed
+max_force = 2.0           # motor torque limit
 
-        real_start = time.time()
-        for t in range(5000):  # about 20s at 240Hz
-            action, _ = model.predict(obs, deterministic=True)
-            obs, r, term, trunc, _ = demo_env.step(action)
-            ep_r += r
-            ep_len += 1
-            time.sleep(1/240)  # realtime playback
-            if term or trunc:
-                break
+p.setRealTimeSimulation(0)
 
-        real_elapsed = time.time() - real_start
-        sim_elapsed = ep_len * demo_env.time_step
+for _ in range(2000):  # Run for ~8 seconds (at 240 Hz)
+    # Set both wheels to same angular velocity
+    p.setJointMotorControl2(
+        bodyUniqueId=robot_id,
+        jointIndex=left_wheel_joint,
+        controlMode=p.VELOCITY_CONTROL,
+        targetVelocity=target_velocity,
+        force=max_force,
+    )
+    p.setJointMotorControl2(
+        bodyUniqueId=robot_id,
+        jointIndex=right_wheel_joint,
+        controlMode=p.VELOCITY_CONTROL,
+        targetVelocity=target_velocity,
+        force=max_force,
+    )
 
-        print(f"\n[RESULT] Simulated time = {sim_elapsed:.2f}s  |  Real elapsed = {real_elapsed:.2f}s")
-        print(f"[RESULT] Steps before fall = {ep_len}  |  Return = {ep_r:.2f}")
+    p.stepSimulation()
+    time.sleep(1 / 240.0)
 
-        demo_env.close()
-    else:
-        print("\n[INFO] Demo skipped (use --render to show PyBullet GUI).")
-
-
-# ---------- CLI Entry ----------
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate PPO on MatchaBalanceEnvTuned")
-    parser.add_argument("--render", action="store_true", help="Show PyBullet GUI demo after evaluation")
-    args = parser.parse_args()
-
-    main(render_demo=args.render)
+# ===========================================
+# 5️⃣ Disconnect
+# ===========================================
+p.disconnect()
