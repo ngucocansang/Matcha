@@ -14,7 +14,7 @@ from matcha_env_v2 import MatchaBalanceEnvTuned
 # ========== GLOBAL CONFIG ==========
 VERSION_TAG = "v2_reward_tuned"
 SEED = 42
-URDF_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\hardware\balance_robot.urdf"
+URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
 
 LOG_ROOT = f"./logs_ppo/{VERSION_TAG}"
 os.makedirs(LOG_ROOT, exist_ok=True)
