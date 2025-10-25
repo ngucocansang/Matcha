@@ -1,7 +1,7 @@
 import pybullet as p, pybullet_data, time
 p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-robot = p.loadURDF(r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\hardware\balance_robot.urdf", [0,0,0.1])
+robot = p.loadURDF(r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf", [0,0,0.1])
 print("Joints:", [p.getJointInfo(robot, j)[1] for j in range(p.getNumJoints(robot))])
 
 # thử apply torque thủ công

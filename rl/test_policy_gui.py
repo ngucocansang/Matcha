@@ -14,11 +14,11 @@ MAX_STEPS = 2000
 RENDER = True
 
 # === 🧭 Absolute paths ===
-ROOT_DIR = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha"
-URDF_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\data\balance_robot.urdf"
+ROOT_DIR = r"D:\FALL\PJ\Matcha"
+URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
 
 # ⚠️ 👉 Modify this line to point exactly to your model zip file
-MODEL_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\logs_ppo\v2_reward_tuned\run_20251023-184644\ppo_matcha_final.zip"
+MODEL_PATH = r"logs_ppo\v2_reward_tuned\run_20251025-170214\ppo_matcha_final.zip"
 
 # Add rl folder to sys.path so Python can find v1/v2
 sys.path.append(os.path.join(ROOT_DIR, "rl"))

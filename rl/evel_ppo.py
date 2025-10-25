@@ -5,8 +5,8 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from v1.matcha_env import MatchaBalanceEnv
 
-URDF_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\hardware\balance_robot.urdf"
-MODEL_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\logs_ppo\v1_baseline_state\run_20251023-192333\ppo_matcha_final.zip"
+URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
+MODEL_PATH = r"D:\FALL\PJ\Matcha\logs_ppo\v2_reward_tuned\run_20251025-160811\ppo_matcha_final.zip"
 
 
 def make_env(render=False):

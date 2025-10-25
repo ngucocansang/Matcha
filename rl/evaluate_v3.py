@@ -4,8 +4,8 @@ import pybullet as p
 from stable_baselines3 import PPO
 from v3.matcha_env_v3 import MatchaBalanceCamEnv
 
-URDF_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\hardware\balance_robot.urdf"
-MODEL_PATH = r"D:\FULBRIGHT\FALL 2025\git_robot\matcha\Matcha\logs_ppo\v3_cam_vision_only\v3_vision_only_run_20251023-234333\ppo_matcha_v3_final.zip"
+URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
+MODEL_PATH = r"D:\FALL\PJ\Matcha\logs_ppo\v2_reward_tuned\run_20251025-170214\ppo_matcha_final.zip"
 
 # GUI env
 env = MatchaBalanceCamEnv(urdf_path=URDF_PATH, render=True, image_size=(84,84))

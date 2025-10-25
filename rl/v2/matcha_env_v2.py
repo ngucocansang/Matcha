@@ -66,7 +66,7 @@ class MatchaBalanceEnvTuned(Env):
         p.loadURDF("plane.urdf")
 
         assert os.path.isfile(self.urdf_path), f"URDF not found: {self.urdf_path}"
-        start_pos = [0, 0, 0.1]
+        start_pos = [0, 0, 0.05]
         start_orn = p.getQuaternionFromEuler([0, 0, 0])
         self.robot_id = p.loadURDF(self.urdf_path, start_pos, start_orn, useFixedBase=False)
 
@@ -109,7 +109,8 @@ class MatchaBalanceEnvTuned(Env):
             self._connect()
         self._load_world()
         self.step_count = 0
-        init_pitch = self.np_random.uniform(low=-0.05, high=0.05)
+        # init_pitch = self.np_random.uniform(low=-0.05, high=0.05)
+        init_pitch = 0.0
         cur_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         new_orn = p.getQuaternionFromEuler([0, init_pitch, 0])
         p.resetBasePositionAndOrientation(self.robot_id, cur_pos, new_orn)
