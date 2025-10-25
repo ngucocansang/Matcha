@@ -1,9 +1,11 @@
 # rl/eval_ppo.py
-import os
 from stable_baselines3 import PPO
+import os 
+import time 
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
-from v1.matcha_env import MatchaBalanceEnv
+from v1.matcha_env import MatchaBalanceEnv as MatchaBalanceEnv1
+from v2.matcha_env_v2 import MatchaBalanceEnvTuned as MatchaBalanceEnv2
 
 URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
 MODEL_PATH = r"D:\FALL\PJ\Matcha\logs_ppo\v2_reward_tuned\run_20251025-180428\ppo_matcha_final.zip"
@@ -11,7 +13,7 @@ MODEL_PATH = r"D:\FALL\PJ\Matcha\logs_ppo\v2_reward_tuned\run_20251025-180428\pp
 
 def make_env(render=False):
     def _thunk():
-        return MatchaBalanceEnv(
+        return MatchaBalanceEnv1(
             urdf_path=URDF_PATH, render=render,
             max_episode_steps=1500, symmetric_action=True
         )
@@ -27,7 +29,6 @@ if __name__ == "__main__":
     eval_env.close()
 
 # --- DEMO with GUI + balance time measurement ---
-import time
 demo_env = make_env(render=True)()
 obs, info = demo_env.reset()
 ep_r, ep_len = 0.0, 0

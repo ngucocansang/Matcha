@@ -168,7 +168,7 @@
   </link>
 
   <!-- ================= JOINTS ================= -->
-  <joint name="base_to_top" type="fixed">
+  <joint name="base_to_top" type="continous">
     <parent link="base_link"/>
     <child link="top_plate"/>
     <origin xyz="0 0 0.05"  rpy="0 0 -1.5708" />
