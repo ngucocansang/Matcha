@@ -31,7 +31,7 @@ class MatchaBalanceEnvTuned(Env):
         self.debug_joints = debug_joints
         self.symmetric_action = symmetric_action
 
-        obs_high = np.array([np.pi, 50.0, 10.0], dtype=np.float32)
+        obs_high = np.array([np.pi, 50.0, 50.0, 10.0], dtype=np.float32)
         self.observation_space = spaces.Box(-obs_high, obs_high, dtype=np.float32)
 
         if self.symmetric_action:
@@ -88,6 +88,8 @@ class MatchaBalanceEnvTuned(Env):
         pos, orn = p.getBasePositionAndOrientation(self.robot_id)
         lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
         roll, pitch, yaw = p.getEulerFromQuaternion(orn)
+        #add for roll rate 
+        roll_rate = ang_vel[0] #trc chỉ care về việc đi thẳng nên robot bị nghiêng
         pitch_rate = ang_vel[1]
         x_dot = lin_vel[0]
         return np.array([pitch, pitch_rate, x_dot], dtype=np.float32), pos, (roll, pitch, yaw)

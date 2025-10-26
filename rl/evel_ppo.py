@@ -5,10 +5,10 @@ import time
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from v1.matcha_env import MatchaBalanceEnv as MatchaBalanceEnv1
-from v2.matcha_env_v2 import MatchaBalanceEnvTuned as MatchaBalanceEnv2
+
 
 URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
-MODEL_PATH = r"logs_ppo\v2_reward_tuned\run_20251026-102030\ppo_matcha_final.zip"
+MODEL_PATH = r"logs_ppo\v2_reward_tuned\run_20251027-012711\ppo_matcha_final.zip"
 
 
 def make_env(render=False):
