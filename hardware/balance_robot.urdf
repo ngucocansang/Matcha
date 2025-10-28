@@ -9,8 +9,7 @@
       <inertia ixx="0.005" iyy="0.005" izz="0.005"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" />
-      <!-- rpy="0 0 -1.5708" -->
+      <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
@@ -169,33 +168,32 @@
   </link>
 
   <!-- ================= JOINTS ================= -->
-  <joint name="base_to_top" type="fixed">
+  <joint name="base_to_top" type="continuous">
     <parent link="base_link"/>
     <child link="top_plate"/>
-    <origin xyz="0 0 0.05"/>
-     <!-- rpy="0 0 -1.5708"  -->
+    <origin xyz="0 0 0.05"  rpy="0 0 -1.5708" />
   </joint>
 
   <!-- Vertical rods connect base to top correctly -->
-  <joint name="base_to_rod_front_left" type="fixed">
+  <joint name="base_to_rod_front_left" type="continuous">
     <parent link="base_link"/>
     <child link="rod_front_left"/>
     <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
   </joint>
 
-  <joint name="base_to_rod_front_right" type="fixed">
+  <joint name="base_to_rod_front_right" type="continuous">
     <parent link="base_link"/>
     <child link="rod_front_right"/>
     <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
   </joint>
 
-  <joint name="base_to_rod_back_left" type="fixed">
+  <joint name="base_to_rod_back_left" type="continuous">
     <parent link="base_link"/>
     <child link="rod_back_left"/>
     <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
   </joint>
 
-  <joint name="base_to_rod_back_right" type="fixed">
+  <joint name="base_to_rod_back_right" type="continuous">
     <parent link="base_link"/>
     <child link="rod_back_right"/>
     <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
