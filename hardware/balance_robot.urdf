@@ -4,12 +4,12 @@
   <!-- ================= BASE (bottom plate) ================= -->
   <link name="base_link">
     <inertial>
-      <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
-      <mass value="0.279"/>
-      <inertia ixx="0.005" iyy="0.005" izz="0.005"/>
+      <origin xyz="0 0 0"  rpy="0 0 0"/>
+      <mass value="0.25"/>
+      <inertia ixx="0.003" iyy="0.003" izz="0.003">
     </inertial>
     <visual>
-      <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
+      <!-- <origin xyz="0 0 0"  rpy="0 0 -1.5708"/> -->
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
@@ -25,32 +25,33 @@
     </collision>
   </link>
 
-  <!-- ================= TOP PLATE ================= -->
+  <!-- ================= TOP PLATE (with battery) ================= -->
   <link name="top_plate">
     <inertial>
       <origin xyz="0 0 0"  rpy="0 0 0" />
-      <mass value="0.05"/>
-      <inertia ixx="0.001" iyy="0.001" izz="0.001"/>
+      <mass value="0.30"/>
+      <inertia ixx="0.004" iyy="0.004" izz="0.004"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0"/>
+      <!-- <origin xyz="0 0 0"/> -->
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
       <material name="black">
-        <color rgba="0.15 0.15 0.15 1"/>
+        <color rgba="0.2 0.2 0.2 1"/>
       </material>
     </visual>
-    <collision>
+    <!-- <collision>
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
-    </collision>
+    </collision> -->
   </link>
 
   <!-- ================= SUPPORT RODS ================= -->
   <!-- All rods are vertical (along Z-axis) -->
   <link name="rod_front_left">
+  <inertial><mass value = "0.01"/></inertial>
     <visual>
       <origin xyz="0.06 0.025 0.025" rpy="0 0 0"/>
       <geometry>

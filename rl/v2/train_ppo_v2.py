@@ -18,7 +18,6 @@ URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
 
 LOG_ROOT = f"./logs_ppo/{VERSION_TAG}"
 os.makedirs(LOG_ROOT, exist_ok=True)
-
 RUN_ID = time.strftime("%Y%m%d-%H%M%S")
 LOG_DIR = os.path.join(LOG_ROOT, f"run_{RUN_ID}")
 os.makedirs(LOG_DIR, exist_ok=True)
