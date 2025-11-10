@@ -33,6 +33,7 @@ for i in range(p.getNumJoints(robot)):
         wheel_indices.append(i)
 print("Detected wheel joints:", wheel_indices)
 
+
 for i in range(p.getNumJoints(robot)):
     jinfo = p.getJointInfo(robot, i)
     axis = p.getJointInfo(robot, i)[13]  # axis local frame
