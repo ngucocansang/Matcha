@@ -1,113 +1,15 @@
-import xml.etree.ElementTree as ET
-from copy import deepcopy
+import pybullet as p, pybullet_data, time
+p.connect(p.GUI)
+p.setAdditionalSearchPath(pybullet_data.getDataPath())
+robot = p.loadURDF(r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf", [0,0,0.1])
+print("Joints:", [p.getJointInfo(robot, j)[1] for j in range(p.getNumJoints(robot))])
 
-IN_PATH  = "balance_robot.urdf"
-OUT_PATH = "balance_robot_fixed.urdf"
-
-# Link names theo log & quy ước dự án
-ROD_LINKS = ["rod_front_left", "rod_front_right", "rod_back_left", "rod_back_right"]
-WHEEL_JOINTS = ["base_to_left_wheel", "base_to_right_wheel"]
-BASE_LINK = "base_link"
-TOP_CANDIDATES = ["top_link", "top", "upper", "mast"]  # linh hoạt tên top link
-
-def ensure_inertial(link_el, default_mass, default_inertia=(5e-5, 5e-5, 5e-5)):
-    inertial = link_el.find("inertial")
-    if inertial is None:
-        inertial = ET.SubElement(link_el, "inertial")
-        ET.SubElement(inertial, "origin", {"xyz": "0 0 0"})
-        ET.SubElement(inertial, "mass", {"value": f"{default_mass}"})
-        ET.SubElement(inertial, "inertia", {
-            "ixx": f"{default_inertia[0]}",
-            "iyy": f"{default_inertia[1]}",
-            "izz": f"{default_inertia[2]}",
-        })
-    else:
-        # Bổ sung các phần còn thiếu nếu có
-        if inertial.find("origin") is None:
-            ET.SubElement(inertial, "origin", {"xyz": "0 0 0"})
-        if inertial.find("mass") is None:
-            ET.SubElement(inertial, "mass", {"value": f"{default_mass}"})
-        if inertial.find("inertia") is None:
-            ET.SubElement(inertial, "inertia", {
-                "ixx": f"{default_inertia[0]}",
-                "iyy": f"{default_inertia[1]}",
-                "izz": f"{default_inertia[2]}",
-            })
-
-def set_axis_on_joint(joint_el, axis_xyz="0 1 0"):
-    axis = joint_el.find("axis")
-    if axis is None:
-        ET.SubElement(joint_el, "axis", {"xyz": axis_xyz})
-    else:
-        axis.set("xyz", axis_xyz)
-
-def set_base_rpy_zero(link_el):
-    # Visual
-    for vis in link_el.findall("visual"):
-        org = vis.find("origin")
-        if org is not None and "rpy" in org.attrib:
-            org.set("rpy", "0 0 0")
-    # Inertial
-    iner = link_el.find("inertial")
-    if iner is not None:
-        org = iner.find("origin")
-        if org is not None and "rpy" in org.attrib:
-            org.set("rpy", "0 0 0")
-    # Collision (ít khi có rpy, nhưng chỉnh cho đồng bộ)
-    for col in link_el.findall("collision"):
-        org = col.find("origin")
-        if org is not None and "rpy" in org.attrib:
-            org.set("rpy", "0 0 0")
-
-def main():
-    tree = ET.parse(IN_PATH)
-    root = tree.getroot()
-
-    # ===== 1) Xử lý base_link: đưa rpy -> 0, đảm bảo inertial đối xứng =====
-    base_el = None
-    for link in root.findall("link"):
-        if link.get("name") == BASE_LINK:
-            base_el = link
-            break
-    if base_el is not None:
-        set_base_rpy_zero(base_el)
-        # Nếu base thiếu inertial -> thêm mass 0.279, inertia đối xứng 0.005
-        ensure_inertial(base_el, default_mass=0.279, default_inertia=(0.005, 0.005, 0.005))
-
-    # ===== 2) Top link: thêm inertial nhỏ nếu thiếu =====
-    for link in root.findall("link"):
-        if link.get("name") in TOP_CANDIDATES:
-            ensure_inertial(link, default_mass=0.05, default_inertia=(5e-5, 5e-5, 5e-5))
-
-    # ===== 3) Rod links: thêm inertial nhỏ nếu thiếu =====
-    for link in root.findall("link"):
-        if link.get("name") in ROD_LINKS:
-            ensure_inertial(link, default_mass=0.05, default_inertia=(5e-5, 5e-5, 5e-5))
-
-    # ===== 4) Wheel joints: gắn axis (0,1,0) =====
-    for joint in root.findall("joint"):
-        jname = joint.get("name") or ""
-        if jname in WHEEL_JOINTS:
-            set_axis_on_joint(joint, axis_xyz="0 1 0")
-
-    # ===== 5) Wheel links: nếu thiếu inertial thì thêm hợp lý =====
-    # Suy luận từ parent/child của joint
-    wheel_links = set()
-    joint_by_name = {j.get("name"): j for j in root.findall("joint") if j.get("name")}
-    for jn in WHEEL_JOINTS:
-        j = joint_by_name.get(jn)
-        if j is not None:
-            child = j.find("child")
-            if child is not None and "link" in child.attrib:
-                wheel_links.add(child.attrib["link"])
-    for link in root.findall("link"):
-        if link.get("name") in wheel_links:
-            # Dùng thông số gần với log bạn gửi
-            ensure_inertial(link, default_mass=0.0765, default_inertia=(5.15e-05, 9.43e-05, 5.15e-05))
-
-    # Lưu file mới
-    tree.write(OUT_PATH, encoding="utf-8", xml_declaration=True)
-    print(f"✅ Wrote {OUT_PATH}")
-
-if __name__ == "__main__":
-    main()
+# thử apply torque thủ công
+wheel_L, wheel_R = 1, 2  # tạm, thay bằng ID bạn in ra
+p.setJointMotorControl2(robot, wheel_L, p.VELOCITY_CONTROL, force=0)
+p.setJointMotorControl2(robot, wheel_R, p.VELOCITY_CONTROL, force=0)
+for _ in range(500):
+    p.setJointMotorControl2(robot, wheel_L, p.TORQUE_CONTROL, force=1.0)
+    p.setJointMotorControl2(robot, wheel_R, p.TORQUE_CONTROL, force=1.0)
+    p.stepSimulation()
+    time.sleep(1/240)
