@@ -1,5 +1,5 @@
 # ==========================================================
-# MatchaBalanceEnvTuned - Reward shaping version (v2)
+# MatchaBalanceEnvUpright - Strict upright balance environment (v3)
 # ==========================================================
 import os
 import numpy as np
@@ -57,6 +57,11 @@ class MatchaBalanceEnvTuned(Env):
         self.robot_id = None
         self.step_count = 0
         self.pitch_prev = 0.0
+        self.pitch_ema = 0.0
+        self.x_origin = 0.0
+        self.ema_alpha = 0.98  # low-pass filter
+
+    # ---------- Setup ----------
 
     # ---------- PyBullet Setup ----------
     def _connect(self):
@@ -84,6 +89,10 @@ class MatchaBalanceEnvTuned(Env):
         for j in [self.wheel_left_joint, self.wheel_right_joint]:
             p.setJointMotorControl2(self.robot_id, j, p.VELOCITY_CONTROL, force=0)
 
+        # Set friction for realistic wheel-ground interaction
+        p.changeDynamics(self.robot_id, self.wheel_left_joint, lateralFriction=1.0)
+        p.changeDynamics(self.robot_id, self.wheel_right_joint, lateralFriction=1.0)
+
     def _find_joint(self, name: str):
         for j in range(p.getNumJoints(self.robot_id)):
             ji = p.getJointInfo(self.robot_id, j)
@@ -91,7 +100,7 @@ class MatchaBalanceEnvTuned(Env):
                 return j
         return None
 
-    # ---------- State and Actions ----------
+    # ---------- State ----------
     def _get_state(self):
         pos, orn = p.getBasePositionAndOrientation(self.robot_id)
         lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
@@ -104,6 +113,7 @@ class MatchaBalanceEnvTuned(Env):
         obs = np.array([roll, pitch, roll_rate, pitch_rate, x_dot], dtype=np.float32)
         return obs, pos, (roll, pitch, yaw)
 
+    # ---------- Action ----------
     def _apply_action(self, action):
         if self.symmetric_action:
             torque = float(np.clip(action[0], -1, 1)) * self.torque_limit
@@ -111,6 +121,10 @@ class MatchaBalanceEnvTuned(Env):
         else:
             a = np.clip(action, -1, 1)
             tau_l, tau_r = a[0] * self.torque_limit, a[1] * self.torque_limit
+        p.setJointMotorControl2(self.robot_id, self.wheel_left_joint, p.TORQUE_CONTROL, force=tau_l)
+        p.setJointMotorControl2(self.robot_id, self.wheel_right_joint, p.TORQUE_CONTROL, force=tau_r)
+
+    # ---------- Gym interface ----------
 
         p.setJointMotorControl2(
             self.robot_id, self.wheel_left_joint, p.TORQUE_CONTROL, force=tau_l
@@ -125,6 +139,7 @@ class MatchaBalanceEnvTuned(Env):
         if self.physics_client is None:
             self._connect()
         self._load_world()
+
         self.step_count = 0
 
         # Start nearly upright
@@ -143,6 +158,20 @@ class MatchaBalanceEnvTuned(Env):
         self.step_count += 1
 
         obs, pos, eul = self._get_state()
+        pitch, pitch_rate, x_dot = obs
+        x, _, _ = pos
+        x_err = x - self.x_origin
+
+        # update moving average to detect "leaned" posture
+        self.pitch_ema = self.ema_alpha * self.pitch_ema + (1 - self.ema_alpha) * pitch
+
+        # ------------- Reward shaping -------------
+        alive_bonus = 0.2  # smaller survival bonus
+        w_th, w_dth, w_vx, w_xpos, w_lean = 2.0, 0.05, 0.20, 0.10, 1.0
+
+        # limit pitch penalty (Huber-like)
+        pitch_pen = min(pitch * pitch, (0.2 ** 2))  # saturate beyond ~11°
+
         roll, pitch, roll_rate, pitch_rate, x_dot = obs
 
         # ---------- Reward ----------
@@ -159,6 +188,28 @@ class MatchaBalanceEnvTuned(Env):
 
         reward = (
             alive_bonus
+            - w_th * pitch_pen
+            - w_dth * (pitch_rate ** 2)
+            - w_vx * (x_dot ** 2)
+            - w_xpos * (x_err ** 2)
+            - w_lean * (self.pitch_ema ** 2)
+            + pitch_delta_reward
+        )
+
+        # ------------- Termination -------------
+        pitch_limit = self.pitch_limit
+        x_limit, v_limit = 0.6, 2.0  # m, m/s
+
+        terminated = (
+            abs(pitch) > pitch_limit
+            or abs(x_err) > x_limit
+            or abs(x_dot) > v_limit
+        )
+        truncated = self.step_count >= self.max_episode_steps
+
+        if terminated:
+            reward -= 10.0  # heavy penalty for fall
+
             - w_pitch * (pitch ** 2)
             - w_roll * (roll ** 2)
             - w_pitch_rate * (pitch_rate ** 2)
