@@ -4,15 +4,12 @@
   <!-- ================= BASE (bottom plate) ================= -->
   <link name="base_link">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0"  rpy="0 0 0"/>
       <mass value="0.25"/>
-      <inertia ixx="0.003" iyy="0.003" izz="0.003" ixy="0" ixz="0" iyz="0"/>
+      <inertia ixx="0.003" iyy="0.003" izz="0.003">
     </inertial>
     <visual>
+      <!-- <origin xyz="0 0 0"  rpy="0 0 -1.5708"/> -->
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
@@ -21,6 +18,7 @@
       </material>
     </visual>
     <collision>
+      <origin xyz="0 0 0"/>
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
@@ -30,15 +28,12 @@
   <!-- ================= TOP PLATE (with battery) ================= -->
   <link name="top_plate">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0"/>
+      <origin xyz="0 0 0"  rpy="0 0 0" />
       <mass value="0.30"/>
-      <inertia ixx="0.004" iyy="0.004" izz="0.004" ixy="0" ixz="0" iyz="0"/>
+      <inertia ixx="0.004" iyy="0.004" izz="0.004"/>
     </inertial>
     <visual>
+      <!-- <origin xyz="0 0 0"/> -->
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
@@ -46,28 +41,19 @@
         <color rgba="0.2 0.2 0.2 1"/>
       </material>
     </visual>
-    <collision>
+    <!-- <collision>
       <geometry>
         <box size="0.14 0.065 0.004"/>
       </geometry>
-    </collision>
+    </collision> -->
   </link>
 
   <!-- ================= SUPPORT RODS ================= -->
-  <!-- Mass assumed 0.01 kg each, inertia of a thin cylinder -->
-
+  <!-- All rods are vertical (along Z-axis) -->
   <link name="rod_front_left">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
+  <inertial><mass value = "0.01"/></inertial>
     <visual>
-      <origin xyz="0.06 0.025 0.025"/>
+      <origin xyz="0.06 0.025 0.025" rpy="0 0 0"/>
       <geometry>
         <cylinder radius="0.005" length="0.05"/>
       </geometry>
@@ -84,15 +70,6 @@
   </link>
 
   <link name="rod_front_right">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
     <visual>
       <origin xyz="0.06 -0.025 0.025"/>
       <geometry>
@@ -111,15 +88,6 @@
   </link>
 
   <link name="rod_back_left">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
     <visual>
       <origin xyz="-0.06 0.025 0.025"/>
       <geometry>
@@ -138,15 +106,6 @@
   </link>
 
   <link name="rod_back_right">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
     <visual>
       <origin xyz="-0.06 -0.025 0.025"/>
       <geometry>
@@ -165,22 +124,19 @@
   </link>
 
   <!-- ================= WHEELS ================= -->
-
   <link name="left_wheel">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0"/>
       <mass value="0.0765"/>
-      <inertia ixx="0.0002" iyy="0.0002" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
+      <inertia ixx="0.0002" iyy="0.0002" izz="0.0001"/>
     </inertial>
     <visual>
       <origin rpy="1.5708 0 0"/>
       <geometry>
         <cylinder radius="0.04" length="0.02"/>
       </geometry>
+      <material name="gray">
+        <color rgba="0.2 0.2 0.2 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="1.5708 0 0"/>
@@ -192,19 +148,17 @@
 
   <link name="right_wheel">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-      <origin xyz="0 0 0"/>
       <mass value="0.0765"/>
-      <inertia ixx="0.0002" iyy="0.0002" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
+      <inertia ixx="0.0002" iyy="0.0002" izz="0.0001"/>
     </inertial>
     <visual>
       <origin rpy="1.5708 0 0"/>
       <geometry>
         <cylinder radius="0.04" length="0.02"/>
       </geometry>
+      <material name="gray">
+        <color rgba="0.2 0.2 0.2 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="1.5708 0 0"/>
@@ -215,82 +169,50 @@
   </link>
 
   <!-- ================= JOINTS ================= -->
-
-  <!-- Base to top: fixed -->
-  <joint name="base_to_top" type="fixed">
+  <joint name="base_to_top" type="continuous">
     <parent link="base_link"/>
     <child link="top_plate"/>
-    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 0.05"  rpy="0 0 -1.5708" />
   </joint>
 
-  <!-- Rods fixed -->
-  <joint name="base_to_rod_front_left" type="fixed">
+  <!-- Vertical rods connect base to top correctly -->
+  <joint name="base_to_rod_front_left" type="continuous">
     <parent link="base_link"/>
     <child link="rod_front_left"/>
-    <origin xyz="0 0 0"/>
+    <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
   </joint>
 
-  <joint name="base_to_rod_front_right" type="fixed">
+  <joint name="base_to_rod_front_right" type="continuous">
     <parent link="base_link"/>
     <child link="rod_front_right"/>
-    <origin xyz="0 0 0"/>
+    <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
   </joint>
 
-  <joint name="base_to_rod_back_left" type="fixed">
+  <joint name="base_to_rod_back_left" type="continuous">
     <parent link="base_link"/>
     <child link="rod_back_left"/>
-    <origin xyz="0 0 0"/>
+    <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
   </joint>
 
-  <joint name="base_to_rod_back_right" type="fixed">
+  <joint name="base_to_rod_back_right" type="continuous">
     <parent link="base_link"/>
     <child link="rod_back_right"/>
-    <origin xyz="0 0 0"/>
+    <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
   </joint>
 
   <!-- Wheels -->
   <joint name="base_to_left_wheel" type="continuous">
     <parent link="base_link"/>
     <child link="left_wheel"/>
-    <origin xyz="0 0.09 -0.035" rpy="0 0 0"/>
+    <origin xyz="0 0.09 -0.035"/>
     <axis xyz="0 1 0"/>
   </joint>
 
   <joint name="base_to_right_wheel" type="continuous">
     <parent link="base_link"/>
     <child link="right_wheel"/>
-    <origin xyz="0 -0.09 -0.035" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
-  </joint>
-
-  <!-- ================= CHARGER ON SECOND FLOOR ================= -->
-  <link name="charger">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.40"/>
-      <inertia ixx="0.0004" iyy="0.0004" izz="0.0004" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0.01" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.05 0.04 0.02"/>
-      </geometry>
-      <material name="dark_gray">
-        <color rgba="0.3 0.3 0.3 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0.01" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.05 0.04 0.02"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <joint name="top_to_charger" type="fixed">
-    <parent link="top_plate"/>
-    <child link="charger"/>
-    <origin xyz="0 0 0.02" rpy="0 0 0"/>
+    <origin xyz="0 -0.09 -0.035"/>
+    <axis xyz="0 -1 0"/>
   </joint>
 
 </robot>
