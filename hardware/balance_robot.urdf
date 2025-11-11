@@ -1,266 +1,256 @@
 <?xml version="1.0"?>
 <robot name="balance_robot_2floor_stable">
 
-  <!-- ================= BASE ================= -->
-  <link name="base_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.25"/>
-      <inertia ixx="0.003" iyy="0.003" izz="0.003"/>
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0"  rpy="0 0 -1.5708"/>
-      <geometry>
-        <box size="0.14 0.065 0.004"/>
-      </geometry>
-      <material name="black">
+    <material name="black">
         <color rgba="0.1 0.1 0.1 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0"/>
-      <geometry>
-        <box size="0.14 0.065 0.004"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <!-- ================= TOP PLATE ================= -->
-  <link name="top_plate">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.20"/>
-      <inertia ixx="0.002" iyy="0.002" izz="0.002" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-    <visual>
-      <geometry>
-        <box size="0.14 0.065 0.004"/>
-      </geometry>
-      <material name="black">
-        <color rgba="0.2 0.2 0.2 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="0.14 0.065 0.004"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <!-- ================= BATTERY ================= -->
-<!-- ================= BATTERY ================= -->
-<!-- <link name="battery">
-  <inertial>
-    <origin xyz="0 0 0.01" rpy="0 0 0"/>
-    <mass value="0.4"/>
-    <inertia ixx="0.0005" iyy="0.0005" izz="0.0005"/>
-  </inertial>
-  <visual>
-    <origin xyz="0 0 0.01" rpy="0 0 -1.5708"/>
-    <geometry>
-      <box size="0.12 0.06 0.02"/>
-    </geometry>
-    <material name="yellow_black">
-      <color rgba="1 1 0 1"/>
     </material>
-  </visual>
-  <collision>
-    <origin xyz="0 0 0.01"/>
-    <geometry>
-      <box size="0.12 0.06 0.02"/>
-    </geometry>
-  </collision>
-</link>
-
-<joint name="top_to_battery" type="fixed">
-  <parent link="base_link"/>
-  <child link="battery"/>
-  <origin xyz="0 0 0" rpy="0 0 0"/>
-</joint> -->
-
-  <!-- ================= SUPPORT RODS ================= -->
-  <link name="rod_front_left">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
-    </inertial>
-    <visual>
-      <origin xyz="0.06 0.025 0.015" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-      <material name="yellow">
-        <color rgba="1 1 0 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="0.06 0.025 0.015"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <link name="rod_front_right">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
-    </inertial>
-    <visual>
-      <origin xyz="0.06 -0.025 0.015" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-      <material name="yellow">
-        <color rgba="1 1 0 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="0.06 -0.025 0.015"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <link name="rod_back_left">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
-    </inertial>
-    <visual>
-      <origin xyz="-0.06 0.025 0.015" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-      <material name="yellow">
-        <color rgba="1 1 0 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="-0.06 0.025 0.015"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <link name="rod_back_right">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.01"/>
-      <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
-    </inertial>
-    <visual>
-      <origin xyz="-0.06 -0.025 0.015" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-      <material name="yellow">
-        <color rgba="1 1 0 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="-0.06 -0.025 0.015"/>
-      <geometry>
-        <cylinder radius="0.005" length="0.03"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <!-- ================= WHEELS ================= -->
-  <link name="left_wheel">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.0765"/>
-      <inertia ixx="0.0002" iyy="0.0002" izz="0.0001"/>
-    </inertial>
-    <visual>
-      <origin rpy="1.5708 0 0"/>
-      <geometry>
-        <cylinder radius="0.04" length="0.02"/>
-      </geometry>
-      <material name="gray">
+    <material name="gray">
         <color rgba="0.2 0.2 0.2 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin rpy="1.5708 0 0"/>
-      <geometry>
-        <cylinder radius="0.04" length="0.02"/>
-      </geometry>
-    </collision>
-  </link>
+    </material>
+    <material name="yellow">
+        <color rgba="1 1 0 1"/>
+    </material>
+    <material name="yellow_black">
+        <color rgba="1 1 0 1"/>
+    </material>
 
-  <link name="right_wheel">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.0765"/>
-      <inertia ixx="0.0002" iyy="0.0002" izz="0.0001"/>
-    </inertial>
-    <visual>
-      <origin rpy="1.5708 0 0"/>
-      <geometry>
-        <cylinder radius="0.04" length="0.02"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.2 0.2 0.2 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin rpy="1.5708 0 0"/>
-      <geometry>
-        <cylinder radius="0.04" length="0.02"/>
-      </geometry>
-    </collision>
-  </link>
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.341"/>
+            <inertia ixx="0.003" iyy="0.003" izz="0.003"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 -0.002"  rpy="0 0 0"/>
+            <geometry>
+                <box size="0.14 0.065 0.004"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 -0.002"/>
+            <geometry>
+                <box size="0.14 0.065 0.004"/>
+            </geometry>
+        </collision>
+    </link>
 
-  <!-- ================= JOINTS ================= -->
-  <joint name="base_to_top" type="fixed">
-    <parent link="base_link"/>
-    <child link="top_plate"/>
-    <origin xyz="0 0 0.034" rpy="0 0 -1.5708"/>
-  </joint>
+    <link name="top_plate">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.05"/>
+            <inertia ixx="0.002" iyy="0.002" izz="0.002" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.14 0.065 0.004"/>
+            </geometry>
+            <material name="gray"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.14 0.065 0.004"/>
+            </geometry>
+        </collision>
+    </link>
 
-  <joint name="base_to_rod_front_left" type="fixed">
-    <parent link="base_link"/>
-    <child link="rod_front_left"/>
-    <origin xyz="0 0 0" rpy="0 0 -1.5708"/>
-  </joint>
+    <link name="battery">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.314"/>
+            <inertia ixx="0.0005" iyy="0.0005" izz="0.0005"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 -1.5708"/>
+            <geometry>
+                <box size="0.12 0.06 0.02"/>
+            </geometry>
+            <material name="yellow_black"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <box size="0.12 0.06 0.02"/>
+            </geometry>
+        </collision>
+    </link>
 
-  <joint name="base_to_rod_front_right" type="fixed">
-    <parent link="base_link"/>
-    <child link="rod_front_right"/>
-    <origin xyz="0 0 0" rpy="0 0 -1.5708"/>
-  </joint>
+    <link name="rod_front_left">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.008"/>
+            <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+            <material name="yellow"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+        </collision>
+    </link>
 
-  <joint name="base_to_rod_back_left" type="fixed">
-    <parent link="base_link"/>
-    <child link="rod_back_left"/>
-    <origin xyz="0 0 0" rpy="0 0 -1.5708"/>
-  </joint>
+    <link name="rod_front_right">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.008"/>
+            <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+            <material name="yellow"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+        </collision>
+    </link>
 
-  <joint name="base_to_rod_back_right" type="fixed">
-    <parent link="base_link"/>
-    <child link="rod_back_right"/>
-    <origin xyz="0 0 0" rpy="0 0 -1.5708"/>
-  </joint>
+    <link name="rod_back_left">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.008"/>
+            <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+            <material name="yellow"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+        </collision>
+    </link>
 
-  <joint name="base_to_left_wheel" type="continuous">
-    <parent link="base_link"/>
-    <child link="left_wheel"/>
-    <origin xyz="0 0.05 -0.035"/>
-    <axis xyz="0 1 0"/>
-  </joint>
+    <link name="rod_back_right">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.008"/>
+            <inertia ixx="0.000001" iyy="0.000001" izz="0.000001"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+            <material name="yellow"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.03"/>
+            </geometry>
+        </collision>
+    </link>
 
-  <joint name="base_to_right_wheel" type="continuous">
-    <parent link="base_link"/>
-    <child link="right_wheel"/>
-    <origin xyz="0 -0.05 -0.035"/>
-    <axis xyz="0 1 0"/>
-  </joint>
+    <link name="left_wheel">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.049"/>
+            <inertia ixx="0.0002" iyy="0.0002" izz="0.0001"/>
+        </inertial>
+        <visual>
+            <origin rpy="1.5708 0 -1.5708"/>
+            <geometry>
+                <cylinder radius="0.04" length="0.02"/>
+            </geometry>
+            <material name="gray"/>
+        </visual>
+        <collision>
+            <origin rpy="1.5708 0 0"/>
+            <geometry>
+                <cylinder radius="0.04" length="0.02"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="right_wheel">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.049"/>
+            <inertia ixx="0.0002" iyy="0.0002" izz="0.0001"/>
+        </inertial>
+        <visual>
+            <origin rpy="1.5708 0 0"/>
+            <geometry>
+                <cylinder radius="0.04" length="0.02"/>
+            </geometry>
+            <material name="gray"/>
+        </visual>
+        <collision>
+            <origin rpy="1.5708 0 -1.5708"/>
+            <geometry>
+                <cylinder radius="0.04" length="0.02"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="base_to_top" type="fixed">
+        <parent link="base_link"/>
+        <child link="top_plate"/>
+        <origin xyz="0 0 0.034" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="top_to_battery" type="fixed">
+        <parent link="top_plate"/>
+        <child link="battery"/>
+        <origin xyz="0 0 0.012" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="base_to_rod_front_left" type="fixed">
+        <parent link="base_link"/>
+        <child link="rod_front_left"/>
+        <origin xyz="0.06 0.025 0.013" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="base_to_rod_front_right" type="fixed">
+        <parent link="base_link"/>
+        <child link="rod_front_right"/>
+        <origin xyz="0.06 -0.025 0.013" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="base_to_rod_back_left" type="fixed">
+        <parent link="base_link"/>
+        <child link="rod_back_left"/>
+        <origin xyz="-0.06 0.025 0.013" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="base_to_rod_back_right" type="fixed">
+        <parent link="base_link"/>
+        <child link="rod_back_right"/>
+        <origin xyz="-0.06 -0.025 0.013" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="base_to_left_wheel" type="continuous">
+        <parent link="base_link"/>
+        <child link="left_wheel"/>
+        <origin xyz="0 0.05 0"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <joint name="base_to_right_wheel" type="continuous">
+        <parent link="base_link"/>
+        <child link="right_wheel"/>
+        <origin xyz="0 -0.05 0"/>
+        <axis xyz="0 1 0"/>
+    </joint>
 
 </robot>
