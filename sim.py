@@ -41,7 +41,7 @@ for i in range(p.getNumJoints(robot)):
 
 
 # === CONTROL ===
-p.resetBasePositionAndOrientation(robot, [0, 0, 0.05], p.getQuaternionFromEuler([0, 0, 0]))
+p.resetBasePositionAndOrientation(robot, [0, 0, 0.05], p.getQuaternionFromEuler([0, 0, 1]))
 
 def get_base_state():
     pos, orn = p.getBasePositionAndOrientation(robot)
