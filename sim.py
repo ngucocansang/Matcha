@@ -4,7 +4,7 @@ import time
 import math
 
 # === CONFIG ===
-URDF_PATH = r"hardware\balance_robot.urdf"   # hoặc file URDF bạn muốn test
+URDF_PATH =
 GUI = True
 STEP_DT = 1. / 240.
 RUN_TIME = 10

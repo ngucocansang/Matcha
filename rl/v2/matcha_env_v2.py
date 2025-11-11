@@ -1,6 +1,4 @@
-# ==========================================================
-# MatchaBalanceEnvUpright - Strict upright balance environment (v3)
-# ==========================================================
+
 import os
 import numpy as np
 import pybullet as p
@@ -8,7 +6,7 @@ import pybullet_data
 from gymnasium import spaces, Env
 
 
-class MatchaBalanceEnvTuned(Env):
+class MatchaBalanceEnvUpright(Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
 
     def __init__(
@@ -58,7 +56,7 @@ class MatchaBalanceEnvTuned(Env):
         self.step_count = 0
         self.pitch_prev = 0.0
         self.pitch_ema = 0.0
-        self.x_origin = 0.0
+        self.x_origin = 0.0  # Assumes we start at x=0
         self.ema_alpha = 0.98  # low-pass filter
 
     # ---------- Setup ----------
@@ -82,9 +80,20 @@ class MatchaBalanceEnvTuned(Env):
         self.robot_id = p.loadURDF(
             self.urdf_path, start_pos, start_orn, useFixedBase=False
         )
+        
+        # We find the origin *after* loading the robot
+        pos, _ = p.getBasePositionAndOrientation(self.robot_id)
+        self.x_origin = pos[0]
 
         self.wheel_left_joint = self._find_joint("base_to_left_wheel")
         self.wheel_right_joint = self._find_joint("base_to_right_wheel")
+
+        # <<< FIX >>> Check if joints were actually found
+        if self.wheel_left_joint is None or self.wheel_right_joint is None:
+            raise ValueError(
+                "Could not find wheel joints ('base_to_left_wheel', 'base_to_right_wheel')."
+                "Please check your URDF file."
+            )
 
         for j in [self.wheel_left_joint, self.wheel_right_joint]:
             p.setJointMotorControl2(self.robot_id, j, p.VELOCITY_CONTROL, force=0)
@@ -121,17 +130,12 @@ class MatchaBalanceEnvTuned(Env):
         else:
             a = np.clip(action, -1, 1)
             tau_l, tau_r = a[0] * self.torque_limit, a[1] * self.torque_limit
+            
         p.setJointMotorControl2(self.robot_id, self.wheel_left_joint, p.TORQUE_CONTROL, force=tau_l)
         p.setJointMotorControl2(self.robot_id, self.wheel_right_joint, p.TORQUE_CONTROL, force=tau_r)
-
-    # ---------- Gym interface ----------
-
-        p.setJointMotorControl2(
-            self.robot_id, self.wheel_left_joint, p.TORQUE_CONTROL, force=tau_l
-        )
-        p.setJointMotorControl2(
-            self.robot_id, self.wheel_right_joint, p.TORQUE_CONTROL, force=tau_r
-        )
+        
+        # <<< FIX >>> Removed the duplicated block of code that was here.
+        # The misplaced "Gym interface" comment was also removed.
 
     # ---------- Gym Interface ----------
     def reset(self, seed=None, options=None):
@@ -143,13 +147,16 @@ class MatchaBalanceEnvTuned(Env):
         self.step_count = 0
 
         # Start nearly upright
-        init_pitch = 0.0
+        init_pitch = 0.0 # You could add a small random value here if you want
         cur_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         new_orn = p.getQuaternionFromEuler([0, init_pitch, 0])
         p.resetBasePositionAndOrientation(self.robot_id, cur_pos, new_orn)
 
         obs, _, _ = self._get_state()
         self.pitch_prev = obs[1]
+        self.pitch_ema = obs[1] # Initialize EMA to current pitch
+        
+        # Make sure observation is returned
         return obs, {}
 
     def step(self, action):
@@ -158,7 +165,7 @@ class MatchaBalanceEnvTuned(Env):
         self.step_count += 1
 
         obs, pos, eul = self._get_state()
-        pitch, pitch_rate, x_dot = obs
+        roll, pitch, roll_rate, pitch_rate, x_dot = obs
         x, _, _ = pos
         x_err = x - self.x_origin
 
@@ -166,21 +173,12 @@ class MatchaBalanceEnvTuned(Env):
         self.pitch_ema = self.ema_alpha * self.pitch_ema + (1 - self.ema_alpha) * pitch
 
         # ------------- Reward shaping -------------
-        alive_bonus = 0.2  # smaller survival bonus
+        # <<< FIX >>> This is the first reward system. We will keep this one.
+        alive_bonus = 0.2
         w_th, w_dth, w_vx, w_xpos, w_lean = 2.0, 0.05, 0.20, 0.10, 1.0
 
         # limit pitch penalty (Huber-like)
         pitch_pen = min(pitch * pitch, (0.2 ** 2))  # saturate beyond ~11°
-
-        roll, pitch, roll_rate, pitch_rate, x_dot = obs
-
-        # ---------- Reward ----------
-        alive_bonus = 1.0
-        w_pitch = 1.5
-        w_roll = 0.8
-        w_pitch_rate = 0.05
-        w_roll_rate = 0.05
-        w_x = 0.01
 
         # reward for moving pitch toward 0 (more upright)
         pitch_delta_reward = 0.5 * (abs(self.pitch_prev) - abs(pitch))
@@ -196,7 +194,6 @@ class MatchaBalanceEnvTuned(Env):
             + pitch_delta_reward
         )
 
-        # ------------- Termination -------------
         pitch_limit = self.pitch_limit
         x_limit, v_limit = 0.6, 2.0  # m, m/s
 
@@ -210,19 +207,6 @@ class MatchaBalanceEnvTuned(Env):
         if terminated:
             reward -= 10.0  # heavy penalty for fall
 
-            - w_pitch * (pitch ** 2)
-            - w_roll * (roll ** 2)
-            - w_pitch_rate * (pitch_rate ** 2)
-            - w_roll_rate * (roll_rate ** 2)
-            - w_x * (x_dot ** 2)
-            + pitch_delta_reward
-        )
-
-        # ---------- Termination ----------
-        terminated = (
-            abs(pitch) > self.pitch_limit or abs(roll) > np.deg2rad(25)
-        )
-        truncated = self.step_count >= self.max_episode_steps
 
         return obs, float(reward), terminated, truncated, {}
 
