@@ -1,5 +1,5 @@
 # ==========================================================
-# MatchaBalanceEnvTuned - Fixed observation shape
+# MatchaBalanceEnvTuned - Reward shaping version (v2)
 # ==========================================================
 import os
 import numpy as np
@@ -33,17 +33,20 @@ class MatchaBalanceEnvTuned(Env):
         self.symmetric_action = symmetric_action
 
         # ---------- Observation space ----------
+        # [roll, pitch, roll_rate, pitch_rate, x_dot]
         obs_high = np.array([np.pi, np.pi, 50.0, 50.0, 10.0], dtype=np.float32)
         self.observation_space = spaces.Box(-obs_high, obs_high, dtype=np.float32)
 
         # ---------- Action space ----------
         if self.symmetric_action:
+            # One torque value applied symmetrically to both wheels
             self.action_space = spaces.Box(
                 low=np.array([-1.0], dtype=np.float32),
                 high=np.array([1.0], dtype=np.float32),
                 dtype=np.float32,
             )
         else:
+            # Separate torques for each wheel
             self.action_space = spaces.Box(
                 low=np.array([-1.0, -1.0], dtype=np.float32),
                 high=np.array([1.0, 1.0], dtype=np.float32),
@@ -98,8 +101,7 @@ class MatchaBalanceEnvTuned(Env):
         pitch_rate = ang_vel[1]
         x_dot = lin_vel[0]
 
-        # Ensure obs is 1D
-        obs = np.array([roll, pitch, roll_rate, pitch_rate, x_dot], dtype=np.float32).flatten()
+        obs = np.array([roll, pitch, roll_rate, pitch_rate, x_dot], dtype=np.float32)
         return obs, pos, (roll, pitch, yaw)
 
     def _apply_action(self, action):
@@ -125,6 +127,7 @@ class MatchaBalanceEnvTuned(Env):
         self._load_world()
         self.step_count = 0
 
+        # Start nearly upright
         init_pitch = 0.0
         cur_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         new_orn = p.getQuaternionFromEuler([0, init_pitch, 0])
@@ -150,6 +153,7 @@ class MatchaBalanceEnvTuned(Env):
         w_roll_rate = 0.05
         w_x = 0.01
 
+        # reward for moving pitch toward 0 (more upright)
         pitch_delta_reward = 0.5 * (abs(self.pitch_prev) - abs(pitch))
         self.pitch_prev = pitch
 
@@ -164,7 +168,9 @@ class MatchaBalanceEnvTuned(Env):
         )
 
         # ---------- Termination ----------
-        terminated = abs(pitch) > self.pitch_limit or abs(roll) > np.deg2rad(25)
+        terminated = (
+            abs(pitch) > self.pitch_limit or abs(roll) > np.deg2rad(25)
+        )
         truncated = self.step_count >= self.max_episode_steps
 
         return obs, float(reward), terminated, truncated, {}

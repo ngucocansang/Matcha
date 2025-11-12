@@ -256,5 +256,4 @@
     <origin xyz="0 -0.09 -0.035"/>
     <axis xyz="0 1 0"/>
   </joint>
-
 </robot>
