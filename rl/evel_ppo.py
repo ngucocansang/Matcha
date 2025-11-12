@@ -8,7 +8,7 @@ from v1.matcha_env import MatchaBalanceEnv as MatchaBalanceEnv1
 
 
 URDF_PATH = r"D:\FALL\PJ\Matcha\hardware\balance_robot.urdf"
-MODEL_PATH = r"logs_ppo\v2_reward_tuned\run_20251111-104125\ppo_matcha_final.zip"
+MODEL_PATH = r"logs_ppo\v2_reward_tuned\run_20251111-120911\ppo_matcha_final.zip"
 
 
 def make_env(render=False):
