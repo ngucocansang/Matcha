@@ -1,45 +1,38 @@
-import gymnasium as gym
-from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import CheckpointCallback
 import os
-
-# Import class môi trường đã viết ở session trước
-# Giả sử file trước bạn lưu là balancing_env.py
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.callbacks import CheckpointCallback
 from env import BalancingRobotEnv
 
-# 1. Khởi tạo môi trường
-env = BalancingRobotEnv(model_path='robot.xml')
+if __name__ == "__main__":
+    # 1. Khởi tạo 4 môi trường song song (VecEnv)
+    # n_envs=4 giúp tăng tốc độ train và tăng tính đa dạng của dữ liệu
+    env = make_vec_env(lambda: BalancingRobotEnv(training=True), n_envs=4)
 
-# 2. Thiết lập TensorBoard log và Checkpoint
-log_dir = "./ppo_balancing_tensorboard/"
-os.makedirs(log_dir, exist_ok=True)
+    log_dir = "./ppo_sim2real_tensorboard/"
+    os.makedirs(log_dir, exist_ok=True)
 
-checkpoint_callback = CheckpointCallback(
-  save_freq=5000,
-  save_path="./checkpoints/",
-  name_prefix="ppo_robot"
-)
+    checkpoint_callback = CheckpointCallback(
+        save_freq=10000, # Lưu mỗi 10k steps (chia cho 4 env thực tế là 2500 lượt update)
+        save_path="./checkpoints_sim2real/",
+        name_prefix="robust_bot"
+    )
 
-# 3. Khởi tạo Model PPO
-# Hyperparameters: learning_rate có thể chỉnh ở đây (Homework)
-model = PPO(
-    "MlpPolicy", 
-    env, 
-    verbose=1, 
-    tensorboard_log=log_dir,
-    learning_rate=0.0003, # Giá trị mặc định hoặc tùy chỉnh
-    n_steps=2048,
-    batch_size=64
-)
+    # 2. Khởi tạo PPO với tham số ổn định
+    model = PPO(
+        "MlpPolicy",
+        env,
+        verbose=1,
+        learning_rate=0.00025, # Giảm nhẹ LR để tránh sụp đổ Reward như PPO_3
+        n_steps=2048,
+        batch_size=128,        # Tăng batch_size để gradient ổn định hơn
+        tensorboard_log=log_dir,
+        device="auto"
+    )
 
-# 4. Huấn luyện (Train)
-print("Bắt đầu huấn luyện...")
-model.learn(
-    total_timesteps=1000000, # Tăng lên 50k-100k để có kết quả tốt hơn 10k
-    callback=checkpoint_callback,
-    progress_bar=True
-)
+    print("Bắt đầu huấn luyện Sim-to-Real...")
+    # Với randomization, bạn chỉ cần khoảng 300k - 500k steps là đủ hội tụ bền vững
+    model.learn(total_timesteps=500000, callback=checkpoint_callback, progress_bar=True)
 
-# 5. Lưu model cuối cùng
-model.save("ppo_balancing_final")
-print("Đã lưu model!")
+    model.save("ppo_balancing_sim2real_final")
+    print("Huấn luyện hoàn tất!")

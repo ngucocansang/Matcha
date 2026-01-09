@@ -3,48 +3,55 @@ from gymnasium import spaces
 import mujoco
 import mujoco.viewer
 import numpy as np
-import time
 import os
 
 class BalancingRobotEnv(gym.Env):
-    def __init__(self, model_path='robot.xml'):
+    def __init__(self, model_path='robot.xml', training=True):
         super().__init__()
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Missing {model_path}")
             
         self.model = mujoco.MjModel.from_xml_path(model_path)
         self.data = mujoco.MjData(self.model)
+        self.training = training # Chế độ train sẽ bật randomization
         
-        # Obs: [pitch, pitch_vel, l_wheel_vel, r_wheel_vel]
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float32)
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
         
         self.viewer = None
-        self.frame_skip = 5 # 100Hz Control (0.002s * 5 = 0.01s)
+        self.frame_skip = 5
+        
+        # Lưu lại giá trị mặc định để randomize dựa trên gốc
+        self.original_mass = np.copy(self.model.body_mass)
+        self.original_friction = np.copy(self.model.geom_friction)
+        self.original_gear = np.copy(self.model.actuator_gear)
 
     def _get_obs(self):
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'chassis')
         xmat = self.data.xmat[body_id].reshape(3, 3)
-        # Tính Pitch Angle
         pitch = np.arctan2(-xmat[2, 0], np.sqrt(xmat[2, 1]**2 + xmat[2, 2]**2))
         
-        # Qvel mapping: 0-2: translation, 3-5: rotation, 6-7: wheels
-        pitch_vel = self.data.qvel[4]
-        l_vel = self.data.qvel[6]
-        r_vel = self.data.qvel[7]
+        # Thêm nhiễu nhẹ vào observation khi training để AI không bị "học vẹt" số liệu ảo
+        noise = np.random.normal(0, 0.005, size=4) if self.training else 0
         
-        obs = np.array([pitch, pitch_vel, l_vel, r_vel], dtype=np.float32)
-        return np.nan_to_num(obs) # Bảo vệ chống NaN
+        obs = np.array([pitch, self.data.qvel[4], self.data.qvel[6], self.data.qvel[7]], dtype=np.float32)
+        return np.nan_to_num(obs + noise)
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.model, self.data)
         
-        # SPAWN POSITION: Đặt robot đứng thẳng trên sàn
-        self.data.qpos[0:3] = [0, 0, 0.05]  # X, Y, Z
-        self.data.qpos[3:7] = [1, 0, 0, 0] # Quaternion (Identity)
-        
-        # Nhiễu cực nhỏ để robot không bị "đóng băng"
+        if self.training:
+            # --- DOMAIN RANDOMIZATION (SESSION 5) ---
+            # Random khối lượng +/- 15%
+            self.model.body_mass[:] = self.original_mass * np.random.uniform(0.85, 1.15, size=self.model.nbody)
+            # Random ma sát sàn nhà +/- 30%
+            self.model.geom_friction[0, 0] = self.original_friction[0, 0] * np.random.uniform(0.7, 1.3)
+            # Random hiệu suất motor (giả lập pin yếu)
+            self.model.actuator_gear[:, 0] = self.original_gear[:, 0] * np.random.uniform(0.9, 1.1)
+
+        self.data.qpos[0:3] = [0, 0, 0.05]
+        self.data.qpos[3:7] = [1, 0, 0, 0]
         self.data.qvel[4] = np.random.uniform(-0.02, 0.02)
         
         mujoco.mj_forward(self.model, self.data)
@@ -60,33 +67,14 @@ class BalancingRobotEnv(gym.Env):
         obs = self._get_obs()
         pitch = obs[0]
         
-        # Reward: 1.0 (alive) - phạt góc nghiêng
-        reward = 1.0 - np.abs(pitch)
+        # --- ENHANCED REWARD (SESSION 4) ---
+        # cos(theta) giúp reward mượt hơn + phạt năng lượng (action^2) + phạt giật (pitch_vel)
+        reward = np.cos(pitch) - 0.01 * np.sum(np.square(action)) - 0.05 * np.abs(obs[1])
         
-        # Termination: Ngã quá 45 độ hoặc bị văng (NaN)
         terminated = bool(np.abs(pitch) > 0.78 or np.isnan(pitch))
-        
         return obs, reward, terminated, False, {}
 
     def render(self):
         if self.viewer is None:
             self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
         self.viewer.sync()
-
-if __name__ == "__main__":
-    env = BalancingRobotEnv()
-    obs, _ = env.reset()
-    print("Môi trường đã sẵn sàng. Chạy thử nghiệm...")
-    
-    try:
-        while True:
-            env.render()
-            action = env.action_space.sample() # Random action
-            obs, reward, done, _, _ = env.step(action)
-            
-            if done:
-                print(f"Robot ngã! Pitch: {np.degrees(obs[0]):.2f}°")
-                obs, _ = env.reset()
-            time.sleep(0.01)
-    except KeyboardInterrupt:
-        if env.viewer: env.viewer.close()
